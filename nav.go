@@ -48,7 +48,7 @@ func (file *file) TotalSize() int64 {
 	return file.Size()
 }
 
-func readdir(path string) ([]*file, error) {
+func readdir(path string, flatcount int) ([]*file, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -85,6 +85,15 @@ func readdir(path string) ([]*file, error) {
 			}
 		}
 
+		if lstat.IsDir() && flatcount > 0 {
+			dirfiles, err := readdir(fpath, flatcount-1)
+			files = append(files, dirfiles...)
+			if err != nil {
+				return files, err
+			}
+			continue
+		}
+
 		ts := times.Get(lstat)
 		at := ts.AccessTime()
 		var ct time.Time
@@ -118,6 +127,7 @@ func readdir(path string) ([]*file, error) {
 
 type dir struct {
 	loading     bool      // directory is loading from disk
+	isInvalid   bool      // directory is invalid and needs to be reloaded
 	loadTime    time.Time // current loading or last load time
 	ind         int       // index of current entry in files
 	pos         int       // position of current entry in ui
@@ -128,25 +138,27 @@ type dir struct {
 	dironly     bool      // dironly value from last sort
 	hiddenfiles []string  // hiddenfiles value from last sort
 	filter      []string  // last filter for this directory
+	flatlevel   int       // amount of directories to flatten
 	ignorecase  bool      // ignorecase value from last sort
 	ignoredia   bool      // ignoredia value from last sort
 	noPerm      bool      // whether lf has no permission to open the directory
 }
 
-func newDir(path string) *dir {
+func newDir(path string, flatlevel int) *dir {
 	time := time.Now()
 
-	files, err := readdir(path)
+	files, err := readdir(path, flatlevel)
 	if err != nil {
 		log.Printf("reading directory: %s", err)
 	}
 
 	return &dir{
-		loadTime: time,
-		path:     path,
-		files:    files,
-		allFiles: files,
-		noPerm:   os.IsPermission(err),
+		loadTime:  time,
+		path:      path,
+		files:     files,
+		allFiles:  files,
+		noPerm:    os.IsPermission(err),
+		flatlevel: flatlevel,
 	}
 }
 
@@ -377,7 +389,7 @@ func (nav *nav) loadDirInternal(path string) *dir {
 		ignoredia:   gOpts.ignoredia,
 	}
 	go func() {
-		d := newDir(path)
+		d := newDir(path, 0)
 		d.sort()
 		d.ind, d.pos = 0, 0
 		nav.dirChan <- d
@@ -410,7 +422,7 @@ func (nav *nav) checkDir(dir *dir) {
 	}
 
 	switch {
-	case s.ModTime().After(dir.loadTime):
+	case s.ModTime().After(dir.loadTime) || dir.isInvalid:
 		now := time.Now()
 
 		// XXX: Linux builtin exFAT drivers are able to predict modifications in the future
@@ -422,7 +434,7 @@ func (nav *nav) checkDir(dir *dir) {
 		dir.loading = true
 		dir.loadTime = now
 		go func() {
-			nd := newDir(dir.path)
+			nd := newDir(dir.path, dir.flatlevel)
 			nd.filter = dir.filter
 			nd.sort()
 			nav.dirChan <- nd
@@ -851,7 +863,8 @@ func (nav *nav) toggle() {
 func (nav *nav) invert() {
 	dir := nav.currDir()
 	for _, f := range dir.files {
-		path := filepath.Join(dir.path, f.Name())
+		// path := filepath.Join(dir.path, f.Name())
+		path := f.path
 		nav.toggleSelection(path)
 	}
 }

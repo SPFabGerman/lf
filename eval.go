@@ -1196,6 +1196,14 @@ func (e *callExpr) eval(app *app, args []string) {
 		}
 		app.ui.loadFile(app.nav, true)
 		app.ui.loadFileInfo(app.nav)
+	case "flatten":
+		log.Printf("flatten: %s", e.args)
+		dir := app.nav.currDir()
+		if len(e.args) == 0 {
+			dir.flatlevel++
+		}
+		dir.isInvalid = true
+		app.nav.renew()
 	case "mark-save":
 		if app.ui.cmdPrefix == ">" {
 			return

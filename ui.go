@@ -287,7 +287,8 @@ func infotimefmt(t time.Time) string {
 func fileInfo(f *file, d *dir) string {
 	var info string
 
-	path := filepath.Join(d.path, f.Name())
+	// path := filepath.Join(d.path, f.Name())
+	path := f.path
 
 	for _, s := range gOpts.info {
 		switch s {
@@ -406,7 +407,8 @@ func (win *win) printDir(screen tcell.Screen, dir *dir, selections map[string]in
 			win.print(screen, 0, i, tcell.StyleDefault.Foreground(tcell.ColorOlive), ln)
 		}
 
-		path := filepath.Join(dir.path, f.Name())
+		// path := filepath.Join(dir.path, f.Name())
+		path := f.path
 
 		if _, ok := selections[path]; ok {
 			win.print(screen, lnwidth, i, st.Background(tcell.ColorPurple), " ")
@@ -434,7 +436,8 @@ func (win *win) printDir(screen tcell.Screen, dir *dir, selections map[string]in
 			iwidth = 2
 		}
 
-		for _, r := range f.Name() {
+		// for _, r := range f.Name() {
+		for _, r := range strings.TrimPrefix(f.path, dir.path + string(filepath.Separator)) {
 			s = append(s, r)
 		}
 
