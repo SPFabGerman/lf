@@ -1199,8 +1199,21 @@ func (e *callExpr) eval(app *app, args []string) {
 	case "flatten":
 		log.Printf("flatten: %s", e.args)
 		dir := app.nav.currDir()
-		if len(e.args) == 0 {
+		if len(e.args) >= 2 {
+			app.ui.echoerr("flatten: more than one argument given")
+			return
+		} else if len(e.args) == 0 {
 			dir.flatlevel++
+		} else if n, err := strconv.Atoi(e.args[0]); err != nil {
+			app.ui.echoerrf("flatten: %s", err)
+			return
+		} else if strings.HasPrefix(e.args[0], "+") || strings.HasPrefix(e.args[0], "-") {
+			dir.flatlevel += n
+			if dir.flatlevel < 0 {
+				dir.flatlevel = 0
+			}
+		} else {
+			dir.flatlevel = n
 		}
 		dir.isInvalid = true
 		app.nav.renew()
