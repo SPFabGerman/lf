@@ -186,12 +186,12 @@ func (dir *dir) sort() {
 	switch dir.sortType.method {
 	case naturalSort:
 		sort.SliceStable(dir.files, func(i, j int) bool {
-			s1, s2 := normalize(dir.files[i].Name(), dir.files[j].Name(), dir.ignorecase, dir.ignoredia)
+			s1, s2 := normalize(dir.files[i].path, dir.files[j].path, dir.ignorecase, dir.ignoredia)
 			return naturalLess(s1, s2)
 		})
 	case nameSort:
 		sort.SliceStable(dir.files, func(i, j int) bool {
-			s1, s2 := normalize(dir.files[i].Name(), dir.files[j].Name(), dir.ignorecase, dir.ignoredia)
+			s1, s2 := normalize(dir.files[i].path, dir.files[j].path, dir.ignorecase, dir.ignoredia)
 			return s1 < s2
 		})
 	case sizeSort:
@@ -223,7 +223,7 @@ func (dir *dir) sort() {
 				ext2 = "\x00"
 			}
 
-			name1, name2 := normalize(dir.files[i].Name(), dir.files[j].Name(), dir.ignorecase, dir.ignoredia)
+			name1, name2 := normalize(dir.files[i].path, dir.files[j].path, dir.ignorecase, dir.ignoredia)
 
 			// in order to also have natural sorting with the filenames
 			// combine the name with the ext but have the ext at the front
@@ -1227,7 +1227,7 @@ func (nav *nav) globSel(pattern string, invert bool) error {
 		}
 		if matched {
 			anyMatched = true
-			fpath := filepath.Join(dir.path, dir.files[i].Name())
+			fpath := dir.files[i].path
 			if _, ok := nav.selections[fpath]; ok == invert {
 				nav.toggleSelection(fpath)
 			}
