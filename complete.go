@@ -50,6 +50,7 @@ var (
 		"search-prev",
 		"filter",
 		"setfilter",
+		"flatten",
 		"mark-save",
 		"mark-remove",
 		"mark-load",
