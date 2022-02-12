@@ -85,7 +85,7 @@ func readdir(path string, flatcount int) ([]*file, error) {
 			}
 		}
 
-		if lstat.IsDir() && flatcount > 0 {
+		if lstat.IsDir() && flatcount > 0 && !isHidden(lstat, path, gOpts.hiddenfiles) {
 			dirfiles, err := readdir(fpath, flatcount-1)
 			files = append(files, dirfiles...)
 			if err != nil {
